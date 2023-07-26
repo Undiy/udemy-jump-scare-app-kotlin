@@ -25,26 +25,26 @@ class ImageStorer(
 
     fun addImage(image: ImageModel) {
         val images = getStoredImages()
-        images.add(image)
-        storeImages(images)
+        storeImages(images + image)
     }
 
-    fun getStoredImages(): MutableList<ImageModel> {
-        val imagesAsJson = preferences.getString(context.getString(R.string.key_stored_images), "")
+    fun getStoredImages(): List<ImageModel> {
+        val imagesAsJson = preferences.getString(context.getString(R.string.key_stored_images), null)
         if ((imagesAsJson ?: "").isEmpty()) {
-            return mutableListOf()
+            return listOf()
         }
 
         val gson = Gson()
-        val type = object : TypeToken<MutableList<ImageModel>>(){}.type
+        val type = object : TypeToken<List<ImageModel>>(){}.type
         return gson.fromJson(imagesAsJson, type)
     }
 
     fun getAllImages(): List<ImageModel> {
-        val assetImages = ArrayList<ImageModel>()
-        assetImages.add(ImageModel(0, "lama", true))
-        assetImages.add(ImageModel(0, "bust_2", true))
-        assetImages.add(ImageModel(0, "man_1", true))
+        val assetImages = mutableListOf(
+            ImageModel(0, "lama", true),
+            ImageModel(0, "bust_2", true),
+            ImageModel(0, "man_1", true)
+        )
 
         assetImages.addAll(getStoredImages())
         return assetImages
@@ -55,7 +55,7 @@ class ImageStorer(
 
         val defaultImage = images.first()
 
-        val imageId = preferences.getString(context.getString(R.string.key_photo_id), "0")
-        return images.find { it.id.toString() == imageId } ?: defaultImage
+        val imageId = preferences.getInt(context.getString(R.string.key_photo_id), 0)
+        return images.find { it.id == imageId } ?: defaultImage
     }
 }
