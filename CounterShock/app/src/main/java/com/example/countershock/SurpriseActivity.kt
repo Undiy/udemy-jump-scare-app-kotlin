@@ -33,17 +33,9 @@ class SurpriseActivity : AppCompatActivity() {
 
         imageView = findViewById(R.id.imageView)
 
-        photoUri = Uri.parse(
-            ContentResolver.SCHEME_ANDROID_RESOURCE
-                    + File.pathSeparator + File.separator + File.separator
-                    + packageName + "/drawable/lama"
-        )
+        photoUri = ShockUtils.getDrawableUri(this, "lama")
 
-        soundUri = Uri.parse(
-            ContentResolver.SCHEME_ANDROID_RESOURCE
-                    + File.pathSeparator + File.separator + File.separator
-                    + packageName + "/raw/see_you"
-        )
+        soundUri = ShockUtils.getRawUri(this,"see_you")
 
         Toast.makeText(this, "Ready", Toast.LENGTH_SHORT).show()
 
