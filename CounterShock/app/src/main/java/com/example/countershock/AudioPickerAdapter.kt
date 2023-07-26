@@ -8,7 +8,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 class AudioPickerAdapter(
     val items: List<AudioModel>,
-    val callback: Callback): RecyclerView.Adapter<AudioPickerAdapter.ViewHolder>() {
+    val callback: Callback)
+    : RecyclerView.Adapter<AudioPickerAdapter.ViewHolder>() {
 
     class ViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
         val textView: TextView

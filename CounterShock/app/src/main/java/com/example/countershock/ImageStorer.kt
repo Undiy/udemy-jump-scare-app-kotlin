@@ -42,8 +42,13 @@ class ImageStorer(
     fun getAllImages(): List<ImageModel> {
         val assetImages = mutableListOf(
             ImageModel(0, "lama", true),
-            ImageModel(0, "bust_2", true),
-            ImageModel(0, "man_1", true)
+            ImageModel(1, "bust_2", true),
+            ImageModel(2, "man_1", true),
+            ImageModel(3, "bust_1", true),
+            ImageModel(4, "clown", true),
+            ImageModel(5, "doll", true),
+            ImageModel(6, "saw", true),
+
         )
 
         assetImages.addAll(getStoredImages())

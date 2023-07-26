@@ -12,6 +12,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.SharedPreferences.Editor
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
@@ -28,7 +29,9 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
 import java.io.File
 import java.io.FileOutputStream
@@ -82,6 +85,19 @@ class MainActivity : AppCompatActivity() {
             ft.addToBackStack(null)
 
             val dialogFragment = AudioPickerDialogFragment()
+            dialogFragment.isCancelable = true
+            dialogFragment.show(ft, "dialog")
+        }
+
+        scaryImageView.setOnClickListener {
+            val ft = supportFragmentManager.beginTransaction()
+            val prev = supportFragmentManager.findFragmentByTag("dialog")
+            if (prev != null) {
+                ft.remove(prev)
+            }
+            ft.addToBackStack(null)
+
+            val dialogFragment = ImagePickerDialogFragment()
             dialogFragment.isCancelable = true
             dialogFragment.show(ft, "dialog")
         }
@@ -176,9 +192,13 @@ class MainActivity : AppCompatActivity() {
         Glide.with(this)
             .asBitmap()
             .load(url)
-            .into(object : SimpleTarget<Bitmap>() {
+            .into(object : CustomTarget<Bitmap>() {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                     saveImage(resource)
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {
+
                 }
 
             })
