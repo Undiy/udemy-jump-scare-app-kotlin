@@ -4,10 +4,16 @@ import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
+import android.content.SharedPreferences.Editor
+import android.graphics.Bitmap
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,11 +21,38 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.PopupMenu
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.transition.Transition
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
+
+    lateinit var preferences: SharedPreferences
+    lateinit var editor: Editor
+
+    lateinit var audioStorer: AudioStorer
+    lateinit var imageStorer: ImageStorer
+
+    lateinit var scaryImageView: ImageView
+    lateinit var audioTextView: TextView
+
+    val updateListener = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            updateUI()
+        }
+
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -27,6 +60,30 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.prankSurface).setOnClickListener() {
             createNotification()
             finish()
+        }
+
+        preferences = getSharedPreferences(ShockUtils.SHOCK_SHARED_PREFS, Context.MODE_PRIVATE)
+        editor = preferences.edit()
+
+        audioStorer = AudioStorer(this)
+        imageStorer = ImageStorer(this)
+
+        scaryImageView = findViewById(R.id.scaryImageView)
+        audioTextView = findViewById(R.id.audioTextView)
+
+        updateUI()
+
+        findViewById<View>(R.id.audioSurface).setOnClickListener {
+            val ft = supportFragmentManager.beginTransaction()
+            val prev = supportFragmentManager.findFragmentByTag("dialog")
+            if (prev != null) {
+                ft.remove(prev)
+            }
+            ft.addToBackStack(null)
+
+            val dialogFragment = AudioPickerDialogFragment()
+            dialogFragment.isCancelable = true
+            dialogFragment.show(ft, "dialog")
         }
     }
 
@@ -84,7 +141,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addTTSAudio(message: String) {
+        val mediaId = getNextMediaId()
 
+        val audioModel = AudioModel(mediaId, message)
+        audioStorer.addAudio(audioModel)
     }
 
     private fun addImageDialog() {
@@ -113,7 +173,62 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun downloadImageToFile(url: String) {
+        Glide.with(this)
+            .asBitmap()
+            .load(url)
+            .into(object : SimpleTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    saveImage(resource)
+                }
 
+            })
+    }
+
+    private fun saveImage(bitmap: Bitmap) {
+        val file = createInternalFile(UUID.randomUUID().toString())
+
+        val imageModel = ImageModel(getNextMediaId(), file.absolutePath, false)
+        try {
+            FileOutputStream(File(imageModel.imgFilename)).use { output ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output)
+                output?.close()
+
+                imageStorer.addImage(imageModel)
+
+            }
+        } catch (ex: IOException) {
+            ex.printStackTrace()
+        }
+    }
+
+
+    private fun updateUI() {
+        val image = imageStorer.getSelectedImage()
+
+        val imageUri = if (image.isAsset) {
+            ShockUtils.getDrawableUri(this, image.imgFilename)
+        } else {
+            Uri.fromFile(File(image.imgFilename))
+        }
+
+        Glide.with(this)
+            .load(imageUri)
+            .into(scaryImageView)
+
+        val audio = audioStorer.getSelectedAudio()
+        audioTextView.text = audio.descriptionMessage
+    }
+
+    override fun onStart() {
+        super.onStart()
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(updateListener, IntentFilter(ShockUtils.MEDIA_UPDATED_ACTION))
+    }
+
+    override fun onStop() {
+        super.onStop()
+        LocalBroadcastManager.getInstance(this)
+            .unregisterReceiver(updateListener)
     }
 
     private fun createNotification() {
@@ -151,4 +266,16 @@ class MainActivity : AppCompatActivity() {
         notificationManager.notify(42233, builder.build())
 
     }
-}
+
+    private fun getNextMediaId(): Int {
+        val mediaId = preferences.getInt(getString(R.string.key_next_media_id), ShockUtils.STARTING_ID)
+        editor.putInt(getString(R.string.key_next_media_id), mediaId + 1)
+        editor.commit()
+        return mediaId
+    }
+
+    private fun createInternalFile(filename: String): File {
+        val outputDir = externalCacheDir
+        return File(outputDir, filename)
+    }
+ }

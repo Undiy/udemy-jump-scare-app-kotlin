@@ -6,4 +6,6 @@
 
     <string name="key_stored_audios">key_stored_audios</string>
     <string name="key_audio_id">key_audio_id</string>
+
+    <string name="key_next_media_id">key_next_media_id</string>
 </resources>

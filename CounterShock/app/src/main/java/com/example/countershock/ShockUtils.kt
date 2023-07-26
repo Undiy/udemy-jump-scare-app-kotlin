@@ -10,7 +10,7 @@ class ShockUtils {
     companion object {
         val SHOCK_SHARED_PREFS = "shock_shared_prefs"
 
-        val startingId = 1000
+        val STARTING_ID = 1000
 
         val MEDIA_UPDATED_ACTION = "MEDIA_UPDATED_ACTION"
 
