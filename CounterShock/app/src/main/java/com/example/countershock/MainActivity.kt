@@ -133,6 +133,12 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 mediaPlayer = MediaPlayer.create(this, uri)
+
+                if (mediaPlayer == null) {
+                    Toast.makeText(this, "Failed to play audio", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
                 mediaPlayer?.setOnCompletionListener {
                     updateAudioIcon(false)
                 }
