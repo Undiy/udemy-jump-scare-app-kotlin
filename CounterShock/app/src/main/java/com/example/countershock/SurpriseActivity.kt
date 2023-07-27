@@ -3,6 +3,7 @@ package com.example.countershock
 import android.content.ContentResolver
 import android.media.AudioAttributes
 import android.media.AudioManager
+import android.media.Image
 import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -27,15 +28,27 @@ class SurpriseActivity : AppCompatActivity() {
 
     private var acceptTouches = true
 
+    lateinit var imageModel: ImageModel
+    lateinit var audioModel: AudioModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_surprise)
 
         imageView = findViewById(R.id.imageView)
 
-        photoUri = ShockUtils.getDrawableUri(this, "lama")
+        imageModel = ImageStorer(this).getSelectedImage()
+        audioModel = AudioStorer(this).getSelectedAudio()
 
-        soundUri = ShockUtils.getRawUri(this,"see_you")
+        photoUri = if (imageModel.isAsset) {
+            ShockUtils.getDrawableUri(this, imageModel.imgFilename)
+        } else {
+            Uri.fromFile(File(imageModel.imgFilename))
+        }
+
+        if (!audioModel.isTTS) {
+            soundUri = ShockUtils.getRawUri(this, audioModel.audioFilename)
+        }
 
         Toast.makeText(this, "Ready", Toast.LENGTH_SHORT).show()
 
@@ -59,11 +72,35 @@ class SurpriseActivity : AppCompatActivity() {
         mediaPlayer.start()
     }
 
+    private fun handleTTS() {
+        val toSpeak = audioModel.descriptionMessage
+        tts = TextToSpeech(this
+        ) {
+            val params = HashMap<String, String>()
+
+            params[TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID] = "utterId"
+
+            if (it == TextToSpeech.SUCCESS) {
+                tts.setOnUtteranceCompletedListener {
+                    finish()
+                }
+                tts.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, params)
+            } else {
+                finish()
+            }
+        }
+    }
+
     private fun userProvidedAction() {
         if (acceptTouches) {
-            showImage()
-            playSoundClip()
             acceptTouches = false
+
+            showImage()
+            if (audioModel.isTTS) {
+                handleTTS()
+            } else {
+                playSoundClip()
+            }
         }
     }
 
