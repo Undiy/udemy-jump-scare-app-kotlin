@@ -13,11 +13,13 @@ import android.content.SharedPreferences
 import android.content.SharedPreferences.Editor
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -48,6 +50,11 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var scaryImageView: ImageView
     lateinit var audioTextView: TextView
+
+    var mediaPlayer: MediaPlayer? = null
+    var tts: TextToSpeech? = null
+
+    lateinit var playIcon: ImageView
 
     val updateListener = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -101,6 +108,42 @@ class MainActivity : AppCompatActivity() {
             dialogFragment.isCancelable = true
             dialogFragment.show(ft, "dialog")
         }
+
+        playIcon = findViewById(R.id.playIconImageView)
+
+        findViewById<View>(R.id.playSurface).setOnClickListener {
+            val audio = audioStorer.getSelectedAudio()
+
+            if (audio.isTTS) {
+                val toSpeak = audio.descriptionMessage
+                tts = TextToSpeech(baseContext, TextToSpeech.OnInitListener {
+                    if (it == TextToSpeech.SUCCESS) {
+                        tts?.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null)
+                    }
+                })
+            } else {
+                val uri = ShockUtils.getRawUri(baseContext, audio.audioFilename)
+
+                if (mediaPlayer != null) {
+                    if (mediaPlayer!!.isPlaying) {
+                        mediaPlayer!!.stop()
+                        updateAudioIcon(false)
+                        return@setOnClickListener
+                    }
+                }
+
+                mediaPlayer = MediaPlayer.create(this, uri)
+                mediaPlayer?.setOnCompletionListener {
+                    updateAudioIcon(false)
+                }
+                mediaPlayer?.start()
+                updateAudioIcon(true)
+            }
+        }
+    }
+
+    fun updateAudioIcon(isPlaying: Boolean) {
+        playIcon.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
